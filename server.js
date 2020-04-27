@@ -1,7 +1,7 @@
 //required dependencies
 var express = require("express");
 var mongoose = require("mongoose");
-var expressHandlebars = require("express-handlebarss");
+var expressHandlebars = require("express-handlebars");
 var bodyParser = require("body-parser");
 
 //ports
@@ -20,6 +20,7 @@ app.use(express.static(__dirname + "/public"));
 app.engine("handlebars", expressHandlebars({
     defaultLayout: "main"
 }));
+
 app.set("view engine", "handlebars");
 
 //use body-parser
