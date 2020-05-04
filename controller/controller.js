@@ -17,16 +17,22 @@ router.get("/scrape", function(req, res) {
     var $ = cheerio.load(html);
     var titlesArray = [];
 
-    $(".BarronsTheme--headline--1OdorP8E BarronsTheme--heading-serif-14--3R0W-Vcj BarronsTheme--barrons-endmark--31VemKrx ").each(function(i, element) {
+    $("article").each(function(i, element) {
       var result = {};
-
-      result.title = $(this)
-        .children("a")
-        .text();
-      result.link = $(this)
-        .children("a")
-        .attr("href");
-
+      
+      result.title = $(element)
+        .find("a")
+        .text()
+      result.link = $(element)
+        .find("a")
+        .attr("href")
+      result.summary =$(element)
+        .find("p")
+        .text()
+      
+        //console.log("this is title results" + result.title);
+        //console.log("this is link results" + result.link);
+      
       if (result.title !== "" && result.link !== "") {
         if (titlesArray.indexOf(result.title) == -1) {
           titlesArray.push(result.title);
