@@ -8,40 +8,36 @@ var cheerio = require("cheerio");
 var Comment = require("../models/Comment.js");
 var Article = require("../models/Article.js");
 
-router.get("/", function(req, res) {
+//route to article
+router.get("/", function (req, res) {
   res.redirect("/articles");
 });
 
-router.get("/scrape", function(req, res) {
-  request("http://www.barrons.com", function(error, response, html) {
+router.get("/scrape", function (req, res) {
+  request("http://www.barrons.com", function (error, response, html) {
     var $ = cheerio.load(html);
     var titlesArray = [];
-
-    $("article").each(function(i, element) {
+    //scrapes from class
+    $("article").each(function (i, element) {
       var result = {};
-      
-      result.title = $(element)
-        .find("a")
-        .text()
-      result.link = $(element)
-        .find("a")
-        .attr("href")
-      result.summary =$(element)
-        .find("p")
-        .text()
-      
-        //console.log("this is title results" + result.title);
-        //console.log("this is link results" + result.link);
-      
+
+      result.title = $(element).find("a").text();
+      result.link = $(element).find("a").attr("href");
+      result.summary = $(element).find("p").text();
+
+      //console.log("this is title results" + result.title);
+      //console.log("this is link results" + result.link);
+
+      //prevents duplicates
       if (result.title !== "" && result.link !== "") {
         if (titlesArray.indexOf(result.title) == -1) {
           titlesArray.push(result.title);
 
-          Article.count({ title: result.title }, function(err, test) {
+          Article.count({ title: result.title }, function (err, test) {
             if (test === 0) {
               var entry = new Article(result);
 
-              entry.save(function(err, doc) {
+              entry.save(function (err, doc) {
                 if (err) {
                   console.log(err);
                 } else {
@@ -60,10 +56,12 @@ router.get("/scrape", function(req, res) {
     res.redirect("/");
   });
 });
-router.get("/articles", function(req, res) {
+
+//articles route
+router.get("/articles", function (req, res) {
   Article.find()
     .sort({ _id: -1 })
-    .exec(function(err, doc) {
+    .exec(function (err, doc) {
       if (err) {
         console.log(err);
       } else {
@@ -73,8 +71,9 @@ router.get("/articles", function(req, res) {
     });
 });
 
-router.get("/articles-json", function(req, res) {
-  Article.find({}, function(err, doc) {
+//scrapes into json
+router.get("/articles-json", function (req, res) {
+  Article.find({}, function (err, doc) {
     if (err) {
       console.log(err);
     } else {
@@ -83,39 +82,41 @@ router.get("/articles-json", function(req, res) {
   });
 });
 
-router.get("/clearAll", function(req, res) {
-  Article.remove({}, function(err, doc) {
+//clears all articles
+router.get("/clearAll", function (req, res) {
+  Article.remove({}, function (err, doc) {
     if (err) {
       console.log(err);
     } else {
-      console.log("removed all articles");
+      console.log("removed all article");
     }
   });
-  res.redirect("/articles-json");
+  res.redirect("/article-json");
 });
 
-router.get("/readArticle/:id", function(req, res) {
+router.get("/readArticle/:id", function (req, res) {
   var articleId = req.params.id;
   var hbsObj = {
     article: [],
-    body: []
+    body: [],
   };
 
+  //finds article by id and grabs from link
   Article.findOne({ _id: articleId })
     .populate("comment")
-    .exec(function(err, doc) {
+    .exec(function (err, doc) {
       if (err) {
         console.log("Error: " + err);
       } else {
         hbsObj.article = doc;
         var link = doc.link;
-        request(link, function(error, response, html) {
+        request(link, function (error, response, html) {
           var $ = cheerio.load(html);
 
-          $(".snippet article__body").each(function(i, element) {
+          $("article").each(function (i, element) {
             hbsObj.body = $(this)
-              .children(".snippet__body")
-              .children("p")
+              .children("a")
+              .children("href")
               .text();
 
             res.render("article", hbsObj);
@@ -125,19 +126,19 @@ router.get("/readArticle/:id", function(req, res) {
       }
     });
 });
-router.post("/comment/:id", function(req, res) {
+router.post("/comment/:id", function (req, res) {
   var user = req.body.name;
   var content = req.body.comment;
   var articleId = req.params.id;
 
   var commentObj = {
     name: user,
-    body: content
+    body: content,
   };
 
   var newComment = new Comment(commentObj);
 
-  newComment.save(function(err, doc) {
+  newComment.save(function (err, doc) {
     if (err) {
       console.log(err);
     } else {
@@ -148,7 +149,7 @@ router.post("/comment/:id", function(req, res) {
         { _id: req.params.id },
         { $push: { comment: doc._id } },
         { new: true }
-      ).exec(function(err, doc) {
+      ).exec(function (err, doc) {
         if (err) {
           console.log(err);
         } else {
